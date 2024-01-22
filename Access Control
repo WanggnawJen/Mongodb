@@ -1,0 +1,49 @@
+Without Access Control - Local Access Only
+=============================================
+mongosh
+    > use graylog                                 [Create new DB named "graylog"]
+    > db.myCollection.insertOne( { x: 1 } );      [Create new collection named "myCollection"]
+    > db.graycollection.find()                    [View data in collection]
+    > db.createUser({user:"grayloguser",pwd:"useruser22",roles:[{role:"readWrite",db:"graylog"}]})
+
+mongosh mongodb://grayloguser:useruser22@127.0.0.1:27017/graylog
+
+Enabling Role Based Access Control (Remote Access)
+==================================================
+1# First admin that have user creation role on DB "admin"
+> db.createUser({ user: "username_admin", pwd: "password", roles: [{ role: "root", db: "admin" }] })
+
+2# Second admin that may have customized powerful roles....
+> db.createUser({ user: "administrator1", pwd: "password1", roles: [{ role: "root", db: "admin" },{ role: "readWrite", db: "graylog"}] })
+
+3# Third admin (Normal Dedicated DBs User/Admin
+> db.createUser({ user: "dbadmin1", pwd: "1234", roles: [{ role: "read", db: "reporting" },{ role: "readWrite", db: "accounts" }]})
+
+4# Fourth admin (Per DB Admin)
+> db.createUser({ user:"grayloguser", pwd:"useruser22", roles: [{role: "readWrite", db:"graylog"}]})
+
+> sudo nano /etc/mongod.conf
+    > net:
+        bindIp: 0.0.0.0
+    > security:
+        authorization: enabled          [Role Based Authorization Turn On]
+        
+> sudo systemctl restart mongod.service
+
+Try test local login
+---------------------
+> mongosh   >>   use admin  >>  db.auth("dbadmin1","1234")
+> mongosh -u grayloguser -p --authenticationDatabase graylog
+
+Try test Remote login with Authentication
+-------------------------------------------
+> mongo --host 192.168.11.200 --port 27017 -u grayloguser -p
+> mongosh --host 192.168.62.211 -u grayloguser -p --authenticationDatabase graylog
+> MongoDB Compass (Windows Desktop)
+
+
+Troubleshooting
+=================
+apt list --installed | grep mongo               [List all installed packages]
+dpkg --purge --force-all mongodb-org-tools      [Remove one by one]
+
